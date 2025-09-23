@@ -15,3 +15,5 @@ b = int(input("Dame el segundo numero"))
 print(f"La suma de {a} + {b} es igual a {a+b}")
 
 print(f"La resta de {a} - {b} es igual a {a-b}")
+
+print (f"El producto de {a} * {b} es igual a {a*b}")
