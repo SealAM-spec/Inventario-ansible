@@ -1,0 +1,43 @@
+- name: Recolectar información de switches y routers Cisco
+  hosts: all
+  gather_facts: no
+
+  tasks:
+
+    # -------------------------------------------------------
+    # 1. Obtener facts de hardware e interfaces
+    # -------------------------------------------------------
+    - name: Obtener facts del dispositivo
+      cisco.ios.ios_facts:
+        gather_subset:
+          - hardware
+          - interfaces
+      register: datos
+      ignore_errors: yes
+
+    # -------------------------------------------------------
+    # 2. Crear archivo CSV si no existe y agregar encabezado
+    # -------------------------------------------------------
+    - name: Crear archivo CSV con encabezado si no existe
+      lineinfile:
+        path: "/home/cisco/ansible/p1/dispositivos.csv"
+        line: "Hostname,Version,Interface,IP"
+        create: yes
+        insertafter: BOF
+        state: present
+
+    # -------------------------------------------------------
+    # 3. Escribir interfaces con IP o interfaces UP sin IP
+    # -------------------------------------------------------
+    - name: Registrar interfaces con IP o interfaces activas sin IP
+      lineinfile:
+        path: "/home/cisco/ansible/p1/dispositivos.csv"
+        line: >
+          {{ datos.ansible_facts.ansible_net_hostname }},
+          {{ datos.ansible_facts.ansible_net_version }},
+          {{ item.key }},
+          {{ item.value.ipv4[0].address if item.value.ipv4 | length > 0 else 'NO_IP' }}
+        insertafter: EOF
+      loop: "{{ datos.ansible_facts.ansible_net_interfaces | dict2items | sort(attribute='key') }}"
+      when: (item.value.ipv4 | length > 0) or (item.value.operstatus == 'up')
+      ignore_errors: yes
